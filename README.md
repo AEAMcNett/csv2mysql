@@ -9,7 +9,7 @@ I found his  [blog post](http://webscraping.com/blog/Importing-CSV-into-MySQL/) 
 
 csv2mysql.py automatically parses a CSV file, creates MySQL table with appropriate field types, and then writes CSV data to the table.
 
-[x] this script has been modified to only sniff the second row of data (i.e. first data row after single row of headers) to have better control of field type definition by way of a properly-formatted fake data row.
+NB: this script has been modified to only sniff the second row of data (i.e. first data row after single row of headers) to have better control of field type definition by way of a properly-formatted fake data row.
 
 ## Usage
 
