@@ -5,10 +5,11 @@ import csv
 import time
 import argparse
 import collections
-import MySQLdb
-import warnings 
+import pymysql as MySQLdb
+import warnings
+
 # suppress annoying mysql warnings
-warnings.filterwarnings(action='ignore', category=MySQLdb.Warning) 
+#warnings.filterwarnings(action='ignore', category=MySQLdb.Warning) 
 
 
 
@@ -82,11 +83,11 @@ def get_col_types(input_file, max_rows=1):
 def get_schema(table, header, col_types):
     """Generate the schema for this table from given types and columns
     """
-    schema_sql = """CREATE TABLE IF NOT EXISTS %s ( 
-        id int NOT NULL AUTO_INCREMENT,""" % table 
+    schema_sql = f"""CREATE TABLE IF NOT EXISTS {table} ( 
+        id int NOT NULL AUTO_INCREMENT,""" 
 
     for col_name, col_type in zip(header, col_types):
-        schema_sql += '\n%s %s,' % (col_name, col_type)
+        schema_sql += f'\n{col_name} {col_type},'
 
     schema_sql += """\nPRIMARY KEY (id)
         ) DEFAULT CHARSET=utf8;"""
@@ -98,8 +99,7 @@ def get_insert(table, header):
     """
     field_names = ', '.join(header)
     field_markers = ', '.join('%s' for col in header)
-    return 'INSERT INTO %s (%s) VALUES (%s);' % \
-        (table, field_names, field_markers)
+    return f'INSERT INTO {table} ({field_names}) VALUES ({field_markers});'
 
 
 def safe_col(s):
@@ -107,17 +107,17 @@ def safe_col(s):
 
 
 def main(input_file, user, password, host, table, database):
-    print "Importing `%s' into MySQL database `%s.%s'" % (input_file, database, table)
+    print(f"Importing `{input_file}' into MySQL database `{database}.{table}'")
     db = MySQLdb.connect(host=host, user=user, passwd=password)
     cursor = db.cursor()
     # create database and if doesn't exist
-    cursor.execute('CREATE DATABASE IF NOT EXISTS %s;' % database)
+    cursor.execute(f'CREATE DATABASE IF NOT EXISTS {database};')
     db.select_db(database)
 
     # define table
-    print 'Analyzing column types ...'
+    print ('Analyzing column types ...')
     col_types = get_col_types(input_file)
-    print col_types
+    print (col_types)
 
     header = None
     for row in csv.reader(open(input_file)):
@@ -127,22 +127,22 @@ def main(input_file, user, password, host, table, database):
             header = [safe_col(col) for col in row]
             schema_sql = get_schema(table, header, col_types)
             # create table
-            cursor.execute('DROP TABLE IF EXISTS %s;' % table)
+            cursor.execute(f'DROP TABLE IF EXISTS {table};')
             cursor.execute(schema_sql)
             # create index for more efficient access
             try:
-                cursor.execute('CREATE INDEX ids ON %s (id);' % table)
+                cursor.execute(f'CREATE INDEX ids ON {table} (id);')
             except MySQLdb.OperationalError:
                 pass # index already exists
 
-            print 'Inserting rows ...'
+            print ('Inserting rows ...')
             # SQL string for inserting data
             insert_sql = get_insert(table, header)
 
     # commit rows to database
-    print 'Committing rows to database ...'
+    print ('Committing rows to database ...')
     db.commit()
-    print 'Done!'
+    print ('Done!')
 
 
 
